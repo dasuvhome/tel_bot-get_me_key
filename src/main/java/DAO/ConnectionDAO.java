@@ -39,25 +39,28 @@ public class ConnectionDAO {
         }
         return connection;
     }
-
+//SELECT * FROM `key` WHERE `status_key` = 'n' ORDER BY `size_key`
     //выборка всех ключей из таблицы кей
-    public String sampleKey() {
+    public String sampleKey(String status) {
         String fullKeyMessage = "";
-        String url = "SELECT * FROM `key`";
-        ArrayList<String> keys = new ArrayList<>();
+        String sql = "SELECT * FROM `key` WHERE `status_key` = '"+ status +"' ORDER BY `size_key`";
+        ArrayList<Key> keys = new ArrayList<>();
         try {
             Statement stmt = getConnectionSql().createStatement();
-            ResultSet rs = stmt.executeQuery(url);
+            ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {
-                keys.add(rs.getString("name_key"));
-            }
 
+                keys.add(new Key(rs.getString("size_key"),rs.getString("name_key"), rs.getString("status_key")));
+            }
+            stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < keys.size(); i++) {
-            sb.append(keys.get(i));
+            sb.append(keys.get(i).getSizeKey());
+            sb.append("      ");
+            sb.append(keys.get(i).getNameKey());
             sb.append("\n");
         }
         fullKeyMessage = sb.toString();
@@ -71,17 +74,54 @@ public class ConnectionDAO {
         String sizeKey = key.getSizeKey();
         key.setStatusKey("y");
         String statusKey = key.getStatusKey();
-        String url = "INSERT INTO `key` ( `size_key`, `name_key`, `status_key`) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO `key` ( `size_key`, `name_key`, `status_key`) VALUES (?, ?, ?)";
 
         try {
-            PreparedStatement psmt = getConnectionSql().prepareStatement(url);
+            PreparedStatement psmt = getConnectionSql().prepareStatement(sql);
             psmt.setString(1, sizeKey);
             psmt.setString(2, nameKey);
             psmt.setString(3, statusKey);
             psmt.executeUpdate();
+            psmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+     public String sampleOneKeyFromTableKey(String size_key){
+        Key key = null;
+        StringBuilder sb = new StringBuilder();
+        String oneKey = "";
+        String sql = "SELECT * FROM `key` WHERE `size_key` LIKE '"+ size_key +"' AND `status_key` LIKE 'y' LIMIT 1";
+         try {
+             Statement stmt = getConnectionSql().createStatement();
+                ResultSet rs = stmt.executeQuery(sql);
+                if(rs.next()){
+                    key = new Key(rs.getString("size_key"), rs.getString("name_key"), rs.getString("status_key"));
+
+
+                }
+                stmt.close();
+         } catch (SQLException e) {
+             e.printStackTrace();
+         }
+            sb.append(key.getSizeKey());
+            sb.append("      ");
+            sb.append(key.getNameKey());
+             oneKey = sb.toString();
+            return oneKey;
+    }
+    public void updateStatus(String nameKey){
+        String sql = "UPDATE `key` SET `status_key`= 'n' WHERE `name_key`= ?";
+        try {
+            PreparedStatement pstmt = getConnectionSql().prepareStatement(sql);
+            pstmt.setString(1, nameKey);
+            pstmt.executeUpdate();
+            getConnectionSql().close();
+            } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
     }
 
 }
